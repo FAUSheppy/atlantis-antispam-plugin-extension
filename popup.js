@@ -12,19 +12,24 @@ async function send_parts(part_array){
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        return await response.json();
+        return response.json()
     })
+
+    return response
+
 }
 
 function iterate_message(msg_part_obj){
 
     parts = []
     /* iterate over parts if parts exist */
-    if(msg_part.parts){
-        for part in msg_part.parts:
-            parts += iterate_message(part)
+    if(msg_part_obj.parts){
+        for(part in msg_part_obj.parts){
+            parts.concat(iterate_message(part))
+        }
+    }
     
-    return [msg_part] + parts
+    return [msg_part_obj].concat(parts)
 
 }
 
@@ -40,7 +45,8 @@ browser.tabs.query({
   browser.messageDisplay.getDisplayedMessages(tabId).then(message_obj => {
 
     /* skip if no message or multi-message view */
-    if(message_obj.message_obj.length != 1){
+    if(message_obj.messages.length != 1){
+        console.log("Invalid Message List length", message_obj.message_obj.length)
         return
     }
 
@@ -54,12 +60,18 @@ browser.tabs.query({
         let msg_part_array = iterate_message(obj)
 
         /* send out the array to the server */
-        let result = send_parts(part_array)
-
-        /* output result */
-        console.log(result)
+        let result = send_parts(msg_part_array)
+        result.then( j => {
+            /* output result */
+            console.log("Output", j)
+        })
 
         /* TODO display a result indicator icon */
+        el = document.getElementById("test")
+        console.log(el)
+        el.style.background = "red"
+        el.style.min_height = "50px"
+        el.innerHTML = "wtf"
 
         /* TODO set an alt-message on hover */
 

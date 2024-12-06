@@ -9,9 +9,12 @@ import datetime
 import secrets
 import yaml
 import json
+from flask_cors import CORS, cross_origin
 
 app = flask.Flask("")
+CORS(app)
 
+@cross_origin(origins=["*"])
 @app.route('/test', methods=["POST"])
 def test():
 

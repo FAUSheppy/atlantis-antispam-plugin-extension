@@ -17,8 +17,11 @@
       "background.js"
     ]
   },
+  "host_permissions": [
+    "*://localhost/*"
+  ],
   "message_display_action": {
     "default_popup": "popup.html",
-    "default_title": "Action"
+    "default_title": "Check Spam"
   }
 }
