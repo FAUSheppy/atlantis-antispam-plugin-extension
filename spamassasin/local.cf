@@ -1,0 +1,76 @@
+include /usr/share/spamassassin/
+
+ifplugin Mail::SpamAssassin::Plugin::AskDNS
+
+askdns __DMARC_POLICY_NONE _dmarc._AUTHORDOMAIN_ TXT /^v=DMARC1;.*\bp=none;/
+askdns __DMARC_POLICY_QUAR _dmarc._AUTHORDOMAIN_ TXT /^v=DMARC1;.*\bp=quarantine;/
+askdns __DMARC_POLICY_REJECT _dmarc._AUTHORDOMAIN_ TXT /^v=DMARC1;.*\bp=reject;/
+
+meta DMARC_REJECT !(DKIM_VALID_AU || SPF_PASS) && __DMARC_POLICY_REJECT
+score DMARC_REJECT 10
+
+meta DMARC_QUAR !(DKIM_VALID_AU || SPF_PASS) && __DMARC_POLICY_QUAR
+score DMARC_QUAR 3
+
+meta DMARC_NONE !(DKIM_VALID_AU || SPF_PASS) && __DMARC_POLICY_NONE
+score DMARC_NONE 2
+
+endif # Mail::SpamAssassin::Plugin::AskDNS
+
+
+score DKIM_INVALID 5
+
+header      LOCAL_FROM_TLD_BASE  From   =~ /@[a-z0-9\-\.]+\.*/i
+describe    LOCAL_FROM_TLD_BASE         Match any Domain
+score       LOCAL_FROM_TLD_BASE 2
+
+header      LOCAL_FROM_TLD  From   =~ /@[a-z0-9\-\.]+\.(de|com|org)[>\s]*\z/i
+describe    LOCAL_FROM_TLD         Match standard domains
+score       LOCAL_FROM_TLD  -3
+
+header      OBFUSCATED_FROM_TLD  From   =~ /@[a-z0-9\-\.]+\.(de|com|org)\..+/i
+describe    OBFUSCATED_FROM_TLD         Obfuscation attempt in FROM TLD
+score       OBFUSCATED_FROM_TLD  5
+
+header      MAIL_CHIMP_MARKETING  Return-Path =~ /@.*bounce-mc.+/i
+describe    MAIL_CHIMP_MARKETING         Mailchimp Marketing Lists
+score       MAIL_CHIMP_MARKETING  5
+
+header UTF_BASE64_SUBJECT Subject =~ /.*=\?utf-[0-9]+\?.*/i
+describe UTF_BASE64_SUBJECT UTF_X base64 encoded subject
+score    UTF_BASE64_SUBJECT 1
+
+score HTML_MESSAGE 1
+score URIBL_ABUSE_SURBL 5
+score HTML_IMAGE_ONLY_24 2
+score HTML_IMAGE_ONLY_28 2
+score HTML_IMAGE_RATIO_02 2
+score BAYES_999 0.8
+
+# Bayes
+use_bayes 1
+use_bayes_rules 1
+
+bayes_auto_learn 0
+bayes_file_mode 0660
+bayes_path /etc/spamassassin/bayes/bayes
+bayes_file_mode 0770
+
+bayes_min_ham_num 40
+bayes_min_spam_num 40
+
+bayes_ignore_header X-Bogosity
+bayes_ignore_header X-Spam-Flag
+bayes_ignore_header X-Spam-Status
+
+required_hits 3.1
+
+clear_report_template
+report Hello!
+report This is the atlantis-mailsystem reporting in. This mail is likely spam. Proceed with maximum caution.
+report
+report Content analysis details:   (_SCORE_ points, _REQD_ required)
+report
+report " pts rule name              description"
+report  ---- ---------------------- --------------------------------------------------
+report _SUMMARY_
