@@ -66,9 +66,20 @@ async function main(tabs){
 
   /* TODO display a result indicator icon */
   el = document.getElementById("test")
-  el.style.background = "red"
-  el.style.min_height = "50px"
-  el.innerHTML = "wtf"
+  if("score" in test){
+    score = test.score
+  }else{
+    score = "NaN"
+  }
+  if("is_spam" in test && test.is_spam){
+    el.style.background = "red"
+    el.style.min_height = "50px"
+    el.innerHTML = `Spam Detected! [score=${score}]`
+  }else{
+    el.style.background = "green"
+    el.style.min_height = "50px"
+    el.innerHTML = `No Spam Detected (which doesn't mean it's 100% safe) [score=${score}!]`
+  }
 
   /* TODO set an alt-message on hover */
 
