@@ -7,7 +7,6 @@ import subprocess
 import os
 import datetime
 import secrets
-import yaml
 import json
 from flask_cors import CORS, cross_origin
 
