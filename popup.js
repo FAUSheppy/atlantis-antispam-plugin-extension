@@ -31,6 +31,37 @@ function iterate_message(msg_part_obj){
 
 }
 
+async function move_message_to_junk(msg_id){
+    
+    const accounts = await browser.accounts.list();
+    const message = await browser.messages.get(msg_id);
+    // Find the account associated with the message
+    const account = accounts.find(acc => message.folder.accountId === acc.id);
+
+    junkFolder = account.junkFolder
+    if (!junkFolder) {
+      // If no junkFolder is defined, search for a folder named "Junk" or other fallback
+      const folders = await browser.folders.getSubFolders(account.id);
+      const fallbackFolder = folders.find(folder => folder.name.toLowerCase() === "trash");
+      if (fallbackFolder) {
+        junkFolder = fallbackFolder.id;
+      }
+    }
+
+    if (!junkFolder) {
+      console.error("No junk folder found for the account (and no fallback).");
+      return;
+    } 
+
+    try{
+      // Move the message to the junk folder of the same account
+      await browser.messages.move([msg_id], junkFolder);
+      console.log(`Message ${msg_id} moved to the junk folder of the same account.`);
+    } catch (error) {
+      console.error("Failed to move the message to the junk folder:", error);
+    }
+}
+
 browser.tabs.query({
   active: true,
   currentWindow: true,
@@ -75,6 +106,7 @@ async function main(tabs){
     el.style.background = "red"
     el.style.min_height = "50px"
     el.innerHTML = `Spam Detected! [score=${score}]`
+    move_message_to_junk(msg_id)
   }else{
     el.style.background = "green"
     el.style.min_height = "50px"

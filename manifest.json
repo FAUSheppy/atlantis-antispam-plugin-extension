@@ -10,7 +10,9 @@
     }
   },
   "permissions": [
-    "messagesRead"
+    "messagesRead",
+    "accountsRead",
+    "messagesMove"
   ],
   "background": {
     "scripts": [

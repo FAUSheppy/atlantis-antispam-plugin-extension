@@ -13,6 +13,15 @@ from flask_cors import CORS, cross_origin
 app = flask.Flask("")
 CORS(app)
 
+TRUE_SENDERS = [
+    "strato.de",
+    "hetzner.de",
+    "amazon.de",
+    "amazon.com",
+    "deutsche-bank.de",
+    "google.com",
+]
+
 # Function to format headers
 def format_headers(headers):
     formatted = []
@@ -77,7 +86,6 @@ def print_part(part):
 
 def feed_spamd(string):
 
-    print("test", file=sys.stderr)
     process = subprocess.run(
         ['spamassassin'],
         input=string,
@@ -86,9 +94,37 @@ def feed_spamd(string):
         universal_newlines=True
     )
 
-    print(process.stderr, process.stdout, file=sys.stderr)
+    #print(process.stderr, process.stdout, file=sys.stderr)
 
     return process.stdout
+
+def possible_for_fake_senders(mail_obj):
+
+    print(mail_obj["headers"].keys(), file=sys.stderr)
+    if "from" in mail_obj["headers"]:
+
+        for x in TRUE_SENDERS:
+
+            from_s = mail_obj["headers"]["from"][0]
+
+            print(from_s, x, x in from_s, file=sys.stderr)
+            if x in from_s:
+
+                # if it's equal it's fine #
+                if x == from_s:
+                    continue
+                
+                # if tld and domain match it's also fine #
+                domain, tld = x.split(".")
+                print(domain, tld, from_s.split(".")[-2], from_s.split(".")[-1], file=sys.stderr)
+                if domain == from_s.split(".")[-2] and tld == from_s.split(".")[-1]:
+                    continue
+
+                # otherwise we got a possible fake #
+                return True
+
+    return False
+
 
 def analyse_spamd_reponse(string):
 
@@ -117,7 +153,7 @@ def test():
         f.write(json.dumps(flask.request.json, indent=2))
 
     # get the full email as a string #
-    result = print_part(flask.request.json)
+    #result = print_part(flask.request.json)
 
     # Rebuild the email
     email_data = flask.request.json
@@ -128,6 +164,8 @@ def test():
     # analyze with spamd #
     result_spamd = feed_spamd(email_text)
     response = analyse_spamd_reponse(result_spamd)
+    if possible_for_fake_senders(flask.request.json):
+        response.update({"score" : 1000, "msg" : "Suspicious sender detected", "is_spam" : True})
 
     print(json.dumps(response, indent=2), file=sys.stderr)
     return flask.jsonify(response)
